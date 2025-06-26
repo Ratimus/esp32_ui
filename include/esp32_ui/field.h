@@ -10,12 +10,12 @@
 #include <Latchable.h>
 #include <RatFuncs.h>
 
-#include "menu_base.h"
-#include "menu_event.h"
-#include "display.h"
-#include "element.h"
-#include "widget.h"
-#include "event_router.h"
+#include <esp32_ui/menu_base.h>
+#include <esp32_ui/menu_event.h>
+#include <esp32_ui/display.h>
+#include <esp32_ui/element.h>
+#include <esp32_ui/widget.h>
+#include <esp32_ui/event_router.h>
 
 class FieldBase : public Element
 {

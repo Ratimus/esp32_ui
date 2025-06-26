@@ -1,9 +1,8 @@
-#include "display.h"
-
 #include "esp_log.h"
 #include "esp_err.h"
-
 #include "driver/i2c.h"
+
+#include <esp32_ui/display.h>
 
 #define I2C_MASTER_SCL_IO 22 // GPIO number for I2C master clock
 #define I2C_MASTER_SDA_IO 21 // GPIO number for I2C master data

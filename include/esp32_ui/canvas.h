@@ -5,11 +5,11 @@
 #include <type_traits>
 #include <vector>
 #include <memory>
-#include "display.h"
-#include "menu_base.h"
-#include "element.h"
-#include "menu_event.h"
-#include "widget.h"
+#include <esp32_ui/display.h>
+#include <esp32_ui/menu_base.h>
+#include <esp32_ui/element.h>
+#include <esp32_ui/menu_event.h>
+#include <esp32_ui/widget.h>
 
 class Canvas : public Element
 {

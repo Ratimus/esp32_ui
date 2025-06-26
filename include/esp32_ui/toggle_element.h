@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bang.h"
+#include <esp32_ui/bang.h>
 
 // Register ONE event to this thing. It will toggle its value when it calls
 // handle_event() for it. If you want to use a multidirectional controller,
@@ -12,31 +12,25 @@ protected:
   const char *false_label;
   const char *delimiter;
   bool show_label = false;
-  bool      value = false;
+  bool value = false;
 
 public:
-
   ToggleElement(const char *label,
-              const char *true_label,
-              const char *false_label,
-              bool init = false,
-              const MenuEvent& trigger = {
-                MenuEvent::Source::NoSource,
-                MenuEvent::Type::NoType, 0
-              },
-              std::function<void()> func = nullptr,
-              const char *delimiter = ": ")
-    : Bang(label, trigger, func),
-      true_label(true_label),
-      false_label(false_label),
-      delimiter(delimiter),
-      value(init)
-  {}
+                const char *true_label,
+                const char *false_label,
+                bool init = false,
+                const MenuEvent &trigger = {
+                    MenuEvent::Source::NoSource,
+                    MenuEvent::Type::NoType, 0},
+                std::function<void()> func = nullptr, const char *delimiter = ": ")
+      : Bang(label, trigger, func), true_label(true_label), false_label(false_label), delimiter(delimiter), value(init)
+  {
+  }
 
   virtual ~ToggleElement() = default;
 
   // This is an on_change() callback; the value toggles and THEN the callback fires
-  virtual bool handle_event(const MenuEvent& ev) override
+  virtual bool handle_event(const MenuEvent &ev) override
   {
     if (event_filter(ev))
     {

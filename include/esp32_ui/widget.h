@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include "menu_base.h"
-#include "element.h"
+#include <esp32_ui/menu_base.h>
+#include <esp32_ui/element.h>
 
 // UI logic unit. Handles child selection, focus, editing, routing,
 // and state control.

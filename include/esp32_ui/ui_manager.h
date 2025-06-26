@@ -4,7 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "canvas.h"
+#include <esp32_ui/canvas.h>
 
 extern TaskHandle_t ui_task_handle;
 

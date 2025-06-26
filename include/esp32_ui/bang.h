@@ -1,23 +1,23 @@
 #pragma once
 
 #include <set>
-#include "element.h"
+
+#include <esp32_ui/element.h>
 
 class Bang : public Element
 {
 public:
   Bang(const char *label,
-       const MenuEvent& trigger = {MenuEvent::Source::NoSource, MenuEvent::Type::NoType, 0},
+       const MenuEvent &trigger = {MenuEvent::Source::NoSource, MenuEvent::Type::NoType, 0},
        std::function<void()> func = nullptr)
-    : Element(label)
+      : Element(label)
   {
     if (func)
     {
       register_handler(std::move(func));
     }
 
-    if ( (trigger.source != MenuEvent::Source::NoSource)
-      && (trigger.type != MenuEvent::Type::NoType) )
+    if ((trigger.source != MenuEvent::Source::NoSource) && (trigger.type != MenuEvent::Type::NoType))
     {
       register_event_listener(trigger);
     }
@@ -43,7 +43,7 @@ public:
   //   return match;
   // }
 
-  virtual bool handle_event(const MenuEvent& ev) override
+  virtual bool handle_event(const MenuEvent &ev) override
   {
     if (event_filter(ev))
     {

@@ -1,9 +1,9 @@
 #include <U8g2lib.h>
-#include "field.h"
-#include "widget.h"
-#include "ui_manager.h"
-#include "event_router.h"
-#include "toggle_element.h"
+#include <esp32_ui/field.h>
+#include <esp32_ui/widget.h>
+#include <esp32_ui/ui_manager.h>
+#include <esp32_ui/event_router.h>
+#include <esp32_ui/toggle_element.h>
 
 TaskHandle_t ui_task_handle = nullptr;
 TaskHandle_t display_task_handle = nullptr;

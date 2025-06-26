@@ -4,11 +4,11 @@
 #include <functional>
 #include <mutex>
 
-#include "menu_event.h"
-#include "menu_base.h"
-#include "element.h"
+#include <esp32_ui/menu_event.h>
+#include <esp32_ui/menu_base.h>
+#include <esp32_ui/element.h>
 
-#include <RatFuncs.h>
+#include <core/RatFuncs.h>
 
 /*  ChatGPT sez:
 Overview: What's in Your EventRouter

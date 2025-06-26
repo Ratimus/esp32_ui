@@ -6,5 +6,7 @@
       "+<*>",
       "-<tests/*>"
     ]
-  }
+  },
+  "frameworks": "Arduino",
+  "platforms": "ESP32"
 }

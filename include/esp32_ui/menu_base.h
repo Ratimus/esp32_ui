@@ -1,8 +1,8 @@
 #pragma once
 
 #include <functional>
-#include "menu_event.h"
-#include "display.h"
+#include <esp32_ui/menu_event.h>
+#include <esp32_ui/display.h>
 
 enum class BaseType
 {

@@ -1,6 +1,6 @@
-#include "widget.h"
-#include "canvas.h"
-#include "event_router.h"
+#include <esp32_ui/widget.h>
+#include <esp32_ui/canvas.h>
+#include <esp32_ui/event_router.h>
 
 Element *Widget::active_element()
 {

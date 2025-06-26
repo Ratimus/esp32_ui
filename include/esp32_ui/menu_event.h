@@ -1,10 +1,10 @@
 #pragma once
 
-#include <stdint.h>
-constexpr uint8_t MAIN_ENCODER_INDEX = 0;
-
-#include <string>
 #include <Arduino.h>
+#include <stdint.h>
+#include <string>
+
+constexpr uint8_t MAIN_ENCODER_INDEX = 0;
 
 #ifdef DEBUGGING_MENU
 

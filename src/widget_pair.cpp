@@ -1,5 +1,5 @@
-#include "widget_pair.h"
-#include "event_router.h"
+#include <esp32_ui/widget_pair.h>
+#include <esp32_ui/event_router.h>
 
 #ifndef LEFT_ENCODER_INDEX
 #define LEFT_ENCODER_INDEX 0
