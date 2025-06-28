@@ -86,7 +86,7 @@ bool Widget::handle_nav_delta(const MenuEvent &ev)
 bool Widget::handle_nav_select(const MenuEvent &ev)
 {
   // Activate submenu
-  menuprintf("%s handle_nav_select\n", label);
+  menuprintf("%s Widget::handle_nav_select\n", label);
   if (linked_canvas)
   {
     return EventRouter::instance()->push_menu(linked_canvas.get());

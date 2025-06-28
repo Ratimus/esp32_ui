@@ -6,6 +6,7 @@
 // Add a new element on the stack
 bool MenuStack::push(Element *el)
 {
+  menuprintf("MenuStack::push %s\n", el->label);
   if (depth >= STACK_SIZE)
   {
     return false;
@@ -16,6 +17,7 @@ bool MenuStack::push(Element *el)
     stack[depth] = el;
     ++depth;
   }
+  menuprintf("MenuStack::top now %s\n", top() ? top()->label : "nullptr");
   return top();
 }
 
@@ -29,7 +31,9 @@ Element *MenuStack::pop()
     return nullptr;
   }
 
+  menuprintf("MenuStack::pop, removing %s\n", top() ? top()->label : "nullptr");
   --depth;
+  stack[depth] = nullptr;
   return top();
 }
 
@@ -173,6 +177,7 @@ void EventRouter::dispatch(const MenuEvent &ev)
 // Push the an Element to the top of the stack
 bool EventRouter::push_menu(Element *el)
 {
+  menuprintf("push_menu: %s\n", el->label);
   assert((el != nullptr) && "null ptr in EventRouter::push_menu");
   if (top_menu() == el)
   {
@@ -273,9 +278,4 @@ bool EventRouter::handle_temporary_interceptors(const MenuEvent &ev)
     return target->handle_event(ev);
   }
   return false;
-}
-
-void EventRouter::set_default_handler(std::function<void(MenuEvent)> handler)
-{
-  default_handler = std::move(handler);
 }
