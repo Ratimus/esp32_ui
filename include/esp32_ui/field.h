@@ -7,8 +7,7 @@
 #include <algorithm>
 #include <set>
 
-#include <Latchable.h>
-#include <RatFuncs.h>
+#include <SequencerTools/Latchable.h>
 
 #include <esp32_ui/menu_base.h>
 #include <esp32_ui/menu_event.h>
@@ -281,12 +280,7 @@ public:
 
   virtual void handle_sync() override
   {
-    // menuprintf("ch: %d\n", ui_state->SELECTED_CHANNEL);
     menuprintf("%s value sync\n", this->label);
-    // menuprint("perma: ");
-    // menuprintln(this->perma_val);
-    // menuprint("temp: ");
-    // menuprintln(this->temp_val);
     if (this->getter_cb)
     {
       T val = this->getter_cb();

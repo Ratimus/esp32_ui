@@ -20,6 +20,7 @@ public:
   static UIState *ui_state;
   bool wrappable = true;
   bool schleeping = false;
+  bool dirty_screen = false;
 
   MenuBase(const char *label = "UNHANDLED")
       : label(label)
@@ -33,14 +34,17 @@ public:
   bool is_wrappable() const { return wrappable; }
   virtual bool event_filter(const MenuEvent &ev) const { return false; }
 
-  virtual void handle_sleep()
+  void go_schleep()
   {
+    Display::instance()->clearBuffer();
     schleeping = true;
+    dirty_screen = true;
   }
 
-  virtual void wake_up()
+  void wake_up()
   {
     schleeping = false;
+    dirty_screen = true;
   }
 
   bool is_schleep()
@@ -63,19 +67,25 @@ public:
   virtual bool handle_nav_delta(const MenuEvent &ev)
   {
     if (on_nav_delta_cb)
+    {
       on_nav_delta_cb(ev);
+    }
     return true;
   }
   virtual bool handle_nav_select(const MenuEvent &ev)
   {
     if (on_select_cb)
+    {
       on_select_cb(ev);
+    }
     return true;
   }
   virtual bool handle_nav_back(const MenuEvent &ev)
   {
     if (on_back_cb)
+    {
       on_back_cb(ev);
+    }
     return true;
   }
 
@@ -92,23 +102,31 @@ public:
   {
     handle_sync();
     if (on_get_focus_cb)
+    {
       on_get_focus_cb();
+    }
   }
   virtual void handle_lose_focus()
   {
     if (on_lose_focus_cb)
+    {
       on_lose_focus_cb();
+    }
   }
   virtual void handle_enter()
   {
     handle_sync();
     if (on_enter_cb)
+    {
       on_enter_cb();
+    }
   }
   virtual void handle_exit()
   {
     if (on_exit_cb)
+    {
       on_exit_cb();
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -136,5 +154,30 @@ public:
   {
     menuprintf("%s: ", label);
     print_nav_event(ev);
+  }
+
+  void print_base_type()
+  {
+    switch (base_type())
+    {
+    case BaseType::Canvas:
+      menuprintf("Canvas");
+      break;
+    case BaseType::WidgetPair:
+      menuprintf("WidgetPair");
+      break;
+    case BaseType::Widget:
+      menuprintf("Widget");
+      break;
+    case BaseType::Field:
+      menuprintf("Field");
+      break;
+    case BaseType::Element:
+      menuprintf("Element");
+      break;
+    default:
+      menuprintf("UNKNOWN");
+      break;
+    }
   }
 };

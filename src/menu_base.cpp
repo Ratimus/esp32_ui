@@ -17,34 +17,29 @@ bool MenuBase::is_primary_select(const MenuEvent &ev)
 
 bool MenuBase::handle_event(const MenuEvent &ev)
 {
-  // menuprintf("%s\n", label);
-
   if (ev.type == MenuEvent::Type::Sync)
   {
     handle_sync();
     return true;
   }
 
-  // if (is_primary_nav_event(ev))
-  // {
   switch (ev.type)
   {
-  case MenuEvent::Back:
+  case MenuEvent::Type::Back:
     return handle_nav_back(ev);
 
-  case MenuEvent::NavDown:
-  case MenuEvent::NavUp:
-  case MenuEvent::NavLeft:
-  case MenuEvent::NavRight:
+  case MenuEvent::Type::NavDown:
+  case MenuEvent::Type::NavUp:
+  case MenuEvent::Type::NavLeft:
+  case MenuEvent::Type::NavRight:
     return handle_nav_delta(ev);
 
-  case MenuEvent::Select:
+  case MenuEvent::Type::Select:
     return handle_nav_select(ev);
 
   default:
     break;
   }
-  // }
 
   return true;
 }

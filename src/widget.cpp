@@ -28,7 +28,7 @@ void Widget::add_submenu(std::unique_ptr<Element> submenu)
 
 void Widget::add_element(std::unique_ptr<Element> element)
 {
-  elements.emplace_back(std::move(element));
+  elements.push_back(std::move(element));
 }
 
 bool Widget::handle_event(const MenuEvent &ev)
@@ -39,6 +39,7 @@ bool Widget::handle_event(const MenuEvent &ev)
   auto el = active_element();
   if (el)
   {
+    el->print_base_type();
     // If this isn't a primary nav event, somebody decided we wanted to see it
     // if we got here, so try to do something with it anyway
     if (el->can_handle(ev) || !is_primary_nav_event(ev))

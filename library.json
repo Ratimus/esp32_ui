@@ -1,12 +1,12 @@
 {
   "name": "esp32_ui",
   "version": "1.0.0",
-  "build": {
-    "srcFilter": [
-      "+<*>",
-      "-<tests/*>"
-    ]
+  "dependencies": {
+    "SequencerTools": "*"
   },
-  "frameworks": "Arduino",
-  "platforms": "ESP32"
+  "frameworks": [
+    "arduino",
+    "espidf"
+  ],
+  "platforms": "espressif32"
 }

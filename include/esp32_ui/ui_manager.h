@@ -14,7 +14,7 @@ class UIManager
 {
 protected:
   static void ui_task(void *param);
-  static void display_task(void *param);
+  virtual void screen_saver() {}
   void dispatch_event(MenuEvent ev);
 
   UIState *ui_state = nullptr;
@@ -27,5 +27,4 @@ public:
 
   UIManager();
   ~UIManager() = default;
-  SemaphoreHandle_t ui_mutex = nullptr;
 };
