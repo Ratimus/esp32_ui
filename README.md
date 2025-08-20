@@ -19,9 +19,58 @@ A lightweight, modular UI framework for ESP32 projects using the U8g2 OLED displ
 - **UIManager**: Base class managing UI update/draw cycle and event dispatch.  
 - **EventRouter**: Central event dispatching system for UI events.  
 - **Display**: Abstract interface wrapping U8g2 display driver.  
-- **SamplerUI** (example): Custom UI inheriting from `UIManager` to implement domain-specific menus and handlers.  
+- **SamplerUI** (example): Custom UI inheriting from `UIManager` to implement domain-specific menus and handlers.
 
----
+## Fundamental Classes
+
+This UI framework is built around several core classes that manage data representation, user interaction, and display rendering. Below is an explanation of the fundamental building blocks you’ll work with when creating UI elements.
+
+### FieldBase and Field Templates (`field.h`)
+
+- **`FieldBase`**  
+  The abstract base class for all editable fields. It provides essential interfaces like label management, value printing, and navigation handling. Every interactive UI element that holds a value derives from this.
+
+- **`ValueField<T>`**  
+  A generic, templated field that holds and edits values of type `T`. It supports minimum, maximum, and step constraints, and handles navigation input for modifying the value intuitively.
+
+- **`SockPuppet<T>`**  
+  A specialized field that binds its value to external state through user-provided getter and setter callbacks. This allows seamless synchronization between the UI and the underlying application data.
+
+### Bang (`bang.h`)
+
+- **`Bang`**  
+  A simple, event-driven element that triggers a callback function when a specific event occurs (e.g., a button press). It serves as an actionable UI component, ideal for commands or triggers without persistent state.
+
+### Canvas and Root (`canvas.h`)
+
+- **`Canvas`**  
+  The primary container for UI widgets, managing layout, navigation, and drawing. It holds a collection of `Widget`s and facilitates user interaction by managing cursor position, focus, and event propagation.
+
+- **`Root`**  
+  A specialized subclass of `Canvas` that typically acts as the top-level UI container. It manages overall drawing and interaction for the entire UI tree.
+
+### MenuEvent (`menu_event.h`)
+
+- **`MenuEvent`**  
+  Defines the input event structure used throughout the UI system. Events have a `Source` (e.g., encoder, button) and a `Type` (e.g., navigation up/down, select, back). This unified event model drives user navigation and interaction.
+
+- **`UIState`**  
+  Holds global UI state, such as the index of the main encoder used for navigation, allowing customization and central management of input devices.
+
+### ToggleElement (`toggle_event.h`)
+
+- **`ToggleElement`**  
+  A toggleable UI element derived from `Bang` that switches between two states (true/false) when triggered. It shows a dynamic label reflecting its current state and executes an optional callback on changes.
+
+### Widget (`widget.h`)
+
+- **`Widget`**  
+  The fundamental container that groups UI elements (`Element`s) and manages focus, editing states, and event routing within that group. It supports behaviors like hover-to-edit, live update, and cancel-on-back, serving as the core building block for interactive UI components.
+
+### WidgetPair (`widget_pair.h`)
+
+- **`WidgetPair`**  
+  A compound widget that organizes two child widgets side-by-side (left and right), managing their focus, navigation, and editing states independently but cohesively. This is useful for paired controls or related fields displayed together.
 
 ## Getting Started
 
@@ -177,7 +226,7 @@ namespace esp32_ui
 ```
 ### 5. Start the UI Task
 
-In your main application entry, instantiate your UI class and call \`start_ui()\`:
+In your main application entry, instantiate your UI class and call `start_ui()`:
 
 ```cpp
 #include "sampler_ui.h" // Your UI subclass header
@@ -195,6 +244,89 @@ int main() {
 ```
 
 This starts the UI update task which will handle input, screen updates, and event dispatching.
+
+### Defining Your Own Canvas
+
+In your project, you need to define your own menu canvases, widgets, etc. You'd put any headers you define for specific instances in your own project's `/include` folder. Here's an example of defining your own canvas:
+
+```cpp
+#pragma once
+
+#include <esp32_ui/toggle_element.h>
+#include <esp32_ui/canvas.h>
+#include <esp32_ui/field.h>
+
+#include "sampler_voice.h"
+
+static constexpr const char *channel_labels[] = {
+    "Channel A", "Channel B", "Channel C", "Channel D"};
+
+namespace esp32_ui
+{
+  class ChannelSettings : public Canvas
+  {
+    std::unique_ptr<Header> uhdr;
+    uint8_t channel;
+
+  public:
+    ChannelSettings(uint8_t channel)
+        : Canvas(channel_labels[channel]),
+          channel(channel)
+    {
+      uhdr = std::make_unique<Header>(channel_labels[channel]);
+      header = uhdr.get();
+      build_canvas();
+    }
+
+    virtual ~ChannelSettings() = default;
+
+    void build_canvas()
+    {
+      auto sample = std::make_unique<ValueField<int16_t>>("Sample", voice[channel].sample.clock(), 0, NUM_SAMPLES - 1, 1);
+      sample->register_getter(std::move([this]()
+                                        { return voice[channel].sample.in; }));
+      sample->register_setter(std::move([this](int16_t idx)
+                                        { voice[channel].sample.clock_in(idx); }));
+      this->add_element(std::move(sample));
+
+      auto level = std::make_unique<ValueField<int16_t>>("Level", voice[channel].mix.clock(), 0, 200, 1);
+      level->register_getter(std::move([this]()
+                                       { return voice[channel].mix.in; }));
+      level->register_setter(std::move([this](int16_t level)
+                                       { voice[channel].mix.clock_in(level); }));
+      level->set_big_step(10);
+      this->add_element(std::move(level));
+
+      auto decay = std::make_unique<ValueField<int16_t>>("Decay", voice[channel].decay.clock(), 1, 1000, 1);
+      decay->register_getter(std::move([this]()
+                                       { return voice[channel].decay.in; }));
+      decay->register_setter(std::move([this](int16_t decay)
+                                       { voice[channel].decay.clock_in(decay); }));
+      decay->set_big_step(100);
+      this->add_element(std::move(decay));
+
+      auto pitch = std::make_unique<ValueField<int16_t>>("Pitch", voice[channel].pitch.clock(), -96, 96, 1);
+      pitch->register_getter(std::move([this]()
+                                       { return voice[channel].pitch.in; }));
+      pitch->register_setter(std::move([this](int16_t pitch)
+                                       { voice[channel].pitch.clock_in(pitch); }));
+      pitch->set_big_step(12);
+      this->add_element(std::move(pitch));
+
+      if (!(channel % 2))
+      {
+        auto choke = std::make_unique<ToggleElement>((channel == 0) ? "Choke Ch. B" : "Choke Ch. D", "YES", "NO", voice[channel].choke.in);
+        choke->register_event_listener(MenuEvent{MenuEvent::Source::Encoder, MenuEvent::Type::Select, MAIN_ENCODER_INDEX});
+
+        // This is an on_change() callback; the value toggles and THEN the callback fires
+        choke->register_handler([this]
+                                { voice[channel].choke.clock_in(!voice[channel].choke.in); });
+        this->add_element(std::move(choke));
+      }
+    }
+  };
+} // namespace esp32_ui
+```
 
 ## Notes and Gotchas
 
