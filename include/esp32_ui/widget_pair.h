@@ -2,63 +2,66 @@
 
 #include <esp32_ui/widget.h>
 
-class WidgetPair : public Widget
+namespace esp32_ui
 {
-  inline static constexpr uint8_t LEFT_INDEX = 0;
-  inline static constexpr uint8_t RIGHT_INDEX = 1;
-
-public:
-  WidgetPair(const char *label,
-             std::unique_ptr<Element> &&left,
-             std::unique_ptr<Element> &&right)
-      : Widget(label)
+  class WidgetPair : public Widget
   {
-    auto w_left = std::make_unique<Widget>(left->label);
-    w_left->add_element(std::move(left));
+    inline static constexpr uint8_t LEFT_INDEX = 0;
+    inline static constexpr uint8_t RIGHT_INDEX = 1;
 
-    auto w_right = std::make_unique<Widget>(right->label);
-    w_right->add_element(std::move(right));
+  public:
+    WidgetPair(const char *label,
+               std::unique_ptr<Element> &&left,
+               std::unique_ptr<Element> &&right)
+        : Widget(label)
+    {
+      auto w_left = std::make_unique<Widget>(left->label);
+      w_left->add_element(std::move(left));
 
-    elements.push_back(std::move(w_left));
-    elements.push_back(std::move(w_right));
+      auto w_right = std::make_unique<Widget>(right->label);
+      w_right->add_element(std::move(right));
 
-    set_hover_to_edit(true);
-    wrappable = false;
-  }
-  const char *widget_type() const override { return "WidgetPair"; }
-  virtual ~WidgetPair() = default;
+      elements.push_back(std::move(w_left));
+      elements.push_back(std::move(w_right));
 
-  BaseType base_type() const override;
-  virtual void set_live_update(bool enable) override;
-  void set_hover_to_edit(bool enable);
-  void set_cancel_on_back(bool enable);
+      set_hover_to_edit(true);
+      wrappable = false;
+    }
+    const char *widget_type() const override { return "WidgetPair"; }
+    virtual ~WidgetPair() = default;
 
-  Widget *c_left() const;
-  Widget *c_right() const;
-  Widget *left();
-  Widget *right();
+    BaseType base_type() const override;
+    virtual void set_live_update(bool enable) override;
+    void set_hover_to_edit(bool enable);
+    void set_cancel_on_back(bool enable);
 
-  void handle_draw(Display *d) const override;
-  virtual bool can_handle(const MenuEvent &ev) const override;
-  virtual bool handle_event(const MenuEvent &ev) override;
+    Widget *c_left() const;
+    Widget *c_right() const;
+    Widget *left();
+    Widget *right();
 
-  virtual bool handle_nav_delta(const MenuEvent &ev) override;
+    void handle_draw(Display *d) const override;
+    virtual bool can_handle(const MenuEvent &ev) const override;
+    virtual bool handle_event(const MenuEvent &ev) override;
 
-  ///////////////////////////////////////////////////////////////////
-  // State Transitions
-  ///////////////////////////////////////////////////////////////////
-  virtual void handle_lose_focus() override;
-  virtual void handle_get_focus() override;
-  virtual void focus_element() override;
-  virtual void blur_element() override;
-  virtual void handle_sync() override;
+    virtual bool handle_nav_delta(const MenuEvent &ev) override;
 
-protected:
-  ///////////////////////////////////////////////////////////////////
-  // Editing
-  ///////////////////////////////////////////////////////////////////
-  virtual void start_editing() override;
-  virtual void stop_editing() override;
-  virtual void commit_edit() override;
-  virtual void cancel_edit() override;
-};
+    ///////////////////////////////////////////////////////////////////
+    // State Transitions
+    ///////////////////////////////////////////////////////////////////
+    virtual void handle_lose_focus() override;
+    virtual void handle_get_focus() override;
+    virtual void focus_element() override;
+    virtual void blur_element() override;
+    virtual void handle_sync() override;
+
+  protected:
+    ///////////////////////////////////////////////////////////////////
+    // Editing
+    ///////////////////////////////////////////////////////////////////
+    virtual void start_editing() override;
+    virtual void stop_editing() override;
+    virtual void commit_edit() override;
+    virtual void cancel_edit() override;
+  };
+} // namespace esp32_ui
