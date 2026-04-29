@@ -8,7 +8,6 @@
 namespace esp32_ui
 {
   TaskHandle_t ui_task_handle = nullptr;
-  TaskHandle_t display_task_handle = nullptr;
   UIState *MenuBase::ui_state = nullptr;
 
   UIManager::UIManager(std::unique_ptr<Canvas> root)
@@ -17,7 +16,6 @@ namespace esp32_ui
     MenuBase::ui_state = ui_state;
     root_node = std::move(root);
     root_node_ptr = root_node.get();
-    EventRouter::instance()->push_menu(root_node_ptr);
   }
 
   void UIManager::dispatch_event(MenuEvent ev)

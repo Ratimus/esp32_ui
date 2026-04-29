@@ -6,7 +6,7 @@
 #endif
 
 #ifndef RIGHT_ENCODER_INDEX
-#define RIGHT_ENCODER_INDEX 0
+#define RIGHT_ENCODER_INDEX 1
 #endif
 
 namespace esp32_ui
@@ -92,6 +92,7 @@ namespace esp32_ui
     {
       if (ev.type != MenuEvent::Type::Select)
       {
+        menuprintf(" WidgetPair::cannot handle non-select event from primary controller! source: %s\n", label);
         return false;
       }
     }
@@ -125,22 +126,22 @@ namespace esp32_ui
       // menuprintln("WidgetPair::  ...not editing!");
     }
 
-    // if (ev.source == MenuEvent::Source::Encoder)
-    // {
-    //   if (ev.index == LEFT_ENCODER_INDEX)
-    //   {
-    //     left()->handle_event(ev);
-    //     EventRouter::instance()->request_sync();
-    //     return true;
-    //   }
+    if (ev.source == MenuEvent::Source::Encoder)
+    {
+      if (ev.index == LEFT_ENCODER_INDEX)
+      {
+        left()->handle_event(ev);
+        EventRouter::instance()->request_sync();
+        return true;
+      }
 
-    //   if (ev.index == RIGHT_ENCODER_INDEX)
-    //   {
-    //     right()->handle_event(ev);
-    //     EventRouter::instance()->request_sync();
-    //     return true;
-    //   }
-    // }
+      if (ev.index == RIGHT_ENCODER_INDEX)
+      {
+        right()->handle_event(ev);
+        EventRouter::instance()->request_sync();
+        return true;
+      }
+    }
 
     return MenuBase::handle_event(ev);
   }
