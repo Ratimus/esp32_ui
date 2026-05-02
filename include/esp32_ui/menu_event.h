@@ -41,6 +41,9 @@ namespace esp32_ui
       ButtonHeld,
       ButtonReleased,
       Draw,
+      ModeSwitch,
+      FreezeData,   // Run handle_exit() without exiting
+      UnfreezeData, // Run handle_enter() without having entered
       Sync,
       AnyAndAll
     } type = NoType;
@@ -77,7 +80,6 @@ namespace esp32_ui
     int8_t MAIN_ENCODER_INDEX = 0;
 
   public:
-    volatile int8_t SELECTED_CHANNEL = -1;
     static UIState *instance()
     {
       static UIState __instance;

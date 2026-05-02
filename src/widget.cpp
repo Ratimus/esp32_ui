@@ -36,9 +36,17 @@ namespace esp32_ui
   bool Widget::handle_event(const MenuEvent &ev)
   {
     menuprintf("%s: Widget::handle_event\n", label);
+    auto *el = active_element();
+    // if ( ev.source == MenuEvent::Source::System
+    //   && ev.type == MenuEvent::Type::ModeSwitch)
+    // {
+    //   if (live_update)
+    //   {
+    //     el->commit();
+    //   }
+    // }
 
     // Check if individual element filters out specific event
-    auto el = active_element();
     if (el)
     {
       el->print_base_type();
@@ -69,15 +77,14 @@ namespace esp32_ui
     // Only allow editing if we're in hover or explicit edit mode
     if (is_editing && el)
     {
-      auto *field = el;
       if ((ev.type == MenuEvent::Type::NavLeft) || (ev.type == MenuEvent::Type::NavUp) || (ev.type == MenuEvent::Type::NavRight) || (ev.type == MenuEvent::Type::NavDown))
       {
-        field->handle_event(ev);
+        el->handle_event(ev);
       }
 
       if (live_update)
       {
-        field->commit();
+        el->commit();
       }
       return true;
     }

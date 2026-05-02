@@ -16,6 +16,7 @@ namespace esp32_ui
     MenuBase::ui_state = ui_state;
     root_node = std::move(root);
     root_node_ptr = root_node.get();
+    EventRouter::instance()->push_menu(root_node_ptr);
   }
 
   void UIManager::dispatch_event(MenuEvent ev)
@@ -40,14 +41,14 @@ namespace esp32_ui
     ui->ui_task_begin_hook();
     EventRouter::instance()->push_menu(ui->root_node_ptr);
 
-    const TickType_t xTaskFrequency{1};
+    const TickType_t xTaskFrequency{5};
     TickType_t xLastWakeTime{xTaskGetTickCount()};
-    uint8_t display_refresh_rate{33};
+    uint8_t display_refresh_rate{10};
     uint8_t display_refresh_timer{0};
 
     while (1)
     {
-      ui->update();
+//      taskYIELD();
       if (!display_refresh_timer)
       {
         if (!ui->root_node->is_schleep())
@@ -58,6 +59,10 @@ namespace esp32_ui
         {
           ui->screen_saver();
         }
+      }
+      else
+      {
+        ui->update();
       }
 
       ++display_refresh_timer;

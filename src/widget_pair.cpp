@@ -11,22 +11,9 @@
 
 namespace esp32_ui
 {
-  // To ensure WidgetPair and Widget work well together in a uniform way:
-  //     Ensure WidgetPair::handle_nav_delta() and others defer to children only if is_editing == true, like Widget does.
-  //     If WidgetPair ever becomes more complex (e.g., supporting more than two elements), generalize the left/right to indexed access or a vector.
   BaseType WidgetPair::base_type() const
   {
     return BaseType::WidgetPair;
-  }
-
-  Widget *WidgetPair::c_left() const
-  {
-    return static_cast<Widget *>(elements[LEFT_INDEX].get());
-  }
-
-  Widget *WidgetPair::c_right() const
-  {
-    return static_cast<Widget *>(elements[RIGHT_INDEX].get());
   }
 
   Widget *WidgetPair::left()
@@ -39,69 +26,19 @@ namespace esp32_ui
     return static_cast<Widget *>(elements[RIGHT_INDEX].get());
   }
 
-  void WidgetPair::handle_draw(Display *d) const
+  Widget *WidgetPair::c_left() const
   {
-    const uint8_t y = d->getCursorY();
-    auto margin = d->char_width();
-    d->setCursor(0, y);
-    if (is_active)
-    {
-      d->print("[");
-    }
-    else
-    {
-      d->print(" ");
-    }
-    d->setCursor(margin, y);
-    c_left()->print_label(d);
-    d->print(": ");
-    c_left()->print_value(d);
-    d->setCursor(d->half_width() + margin, y);
-    c_right()->print_label(d);
-    d->print(": ");
-    c_right()->print_value(d);
-    if (is_active)
-    {
-      d->setCursor(d->getWidth() - d->char_width(), y);
-      d->print("]");
-    }
+    return static_cast<Widget *>(elements[LEFT_INDEX].get());
   }
 
-  bool WidgetPair::handle_nav_delta(const MenuEvent &ev)
+  Widget *WidgetPair::c_right() const
   {
-    if (ev.source == MenuEvent::Source::Encoder)
-    {
-      if (ev.index == LEFT_ENCODER_INDEX)
-      {
-        left()->handle_event(ev);
-        return true;
-      }
-
-      if (ev.index == RIGHT_ENCODER_INDEX)
-      {
-        right()->handle_event(ev);
-        return true;
-      }
-    }
-    return MenuBase::handle_nav_delta(ev);
+    return static_cast<Widget *>(elements[RIGHT_INDEX].get());
   }
 
   bool WidgetPair::can_handle(const MenuEvent &ev) const
   {
-    if (is_primary_nav_event(ev))
-    {
-      if (ev.type != MenuEvent::Type::Select)
-      {
-        menuprintf(" WidgetPair::cannot handle non-select event from primary controller! source: %s\n", label);
-        return false;
-      }
-    }
-
-    if (event_filter(ev))
-    {
-      return true;
-    }
-
+    // Let children opt-in first
     if (c_left()->can_handle(ev) || c_right()->can_handle(ev))
     {
       return true;
@@ -112,38 +49,101 @@ namespace esp32_ui
 
   bool WidgetPair::handle_event(const MenuEvent &ev)
   {
-    // menuprintf(" WidgetPair::handle_event %s\n", label);
-
-    // Check if individual element filters out specific event
-    auto el = active_element();
-
-    if (!el)
-    {
-      // menuprintln("WidgetPair::  ...nullptr element!");
-    }
-    if (!is_editing)
-    {
-      // menuprintln("WidgetPair::  ...not editing!");
-    }
-
     if (ev.source == MenuEvent::Source::Encoder)
     {
       if (ev.index == LEFT_ENCODER_INDEX)
       {
         left()->handle_event(ev);
-        EventRouter::instance()->request_sync();
+        if (live_update)
+        {
+          menuprintf("WidgetPair:Left commit\n");
+          left()->commit_edit();
+        }
+        else
+        {
+          menuprintf("WidgetPair:Left NO commit\n");
+        }
+
         return true;
       }
 
       if (ev.index == RIGHT_ENCODER_INDEX)
       {
         right()->handle_event(ev);
-        EventRouter::instance()->request_sync();
+        if (live_update)
+        {
+          menuprintf("WidgetPair:Right commit\n");
+          right()->commit_edit();
+        }
+        else
+        {
+          menuprintf("WidgetPair:Right NO commit\n");
+        }
+
         return true;
       }
     }
 
     return MenuBase::handle_event(ev);
+  }
+
+  bool WidgetPair::handle_nav_delta(const MenuEvent &ev)
+  {
+    menuprintf("\nWidget::%s nav delta", label);
+    if (!is_editing)
+    {
+      menuprintln(" ...not editing!");
+    }
+
+    // Only allow editing if we're in hover or explicit edit mode
+    if (is_editing)
+    {
+      if (ev.index == LEFT_ENCODER_INDEX)
+      {
+        left()->handle_event(ev);
+        if (live_update)
+        {
+          left()->commit();
+        }
+      }
+      else if (ev.index == RIGHT_ENCODER_INDEX)
+      {
+        right()->handle_event(ev);
+        if (live_update)
+        {
+          right()->commit();
+        }
+      }
+
+      return true;
+    }
+
+    return MenuBase::handle_nav_delta(ev);
+  }
+
+  void WidgetPair::handle_draw(Display *d) const
+  {
+    const uint8_t y = d->getCursorY();
+    auto margin = d->char_width();
+
+    d->setCursor(0, y);
+    d->print(is_active ? "[" : " ");
+
+    d->setCursor(margin, y);
+    c_left()->print_label(d);
+    d->print(": ");
+    c_left()->print_value(d);
+
+    d->setCursor(d->half_width() + margin, y);
+    c_right()->print_label(d);
+    d->print(": ");
+    c_right()->print_value(d);
+
+    if (is_active)
+    {
+      d->setCursor(d->getWidth() - d->char_width(), y);
+      d->print("]");
+    }
   }
 
   void WidgetPair::start_editing()
@@ -165,13 +165,20 @@ namespace esp32_ui
   void WidgetPair::handle_get_focus()
   {
     menuprintf("WidgetPair:: %s handle_get_focus\n", label);
+
     is_active = true;
-    left()->handle_get_focus();
-    right()->handle_get_focus();
+
     if (hover_to_edit)
     {
       start_editing();
     }
+    else
+    {
+      left()->focus_element();
+      right()->focus_element();
+    }
+
+    MenuBase::handle_get_focus();
   }
 
   void WidgetPair::handle_lose_focus()
@@ -211,11 +218,12 @@ namespace esp32_ui
   void WidgetPair::set_hover_to_edit(bool enable)
   {
     hover_to_edit = enable;
-    left()->hover_to_edit = hover_to_edit;
-    right()->hover_to_edit = hover_to_edit;
+
+    left()->hover_to_edit = enable;
+    right()->hover_to_edit = enable;
+
     if (hover_to_edit)
     {
-      // Immediately write changes
       set_live_update(true);
     }
   }
@@ -223,11 +231,12 @@ namespace esp32_ui
   void WidgetPair::set_cancel_on_back(bool enable)
   {
     cancel_on_back = enable;
-    left()->cancel_on_back = cancel_on_back;
-    right()->cancel_on_back = cancel_on_back;
+
+    left()->cancel_on_back = enable;
+    right()->cancel_on_back = enable;
+
     if (cancel_on_back)
     {
-      // Don't immediately save changes if you might want to cancel them
       set_live_update(false);
     }
   }
@@ -249,4 +258,5 @@ namespace esp32_ui
     left()->handle_sync();
     right()->handle_sync();
   }
+
 } // namespace esp32_ui

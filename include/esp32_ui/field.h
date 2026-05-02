@@ -68,6 +68,15 @@ namespace esp32_ui
     virtual void apply_delta(int8_t delta) = 0;
   };
 
+  // For SockPuppet
+  //  Absolute: commit(val) calls setter_cb(val), which directly consumes the value
+  //  Delta: commit(val) calls setter_cb(val - last_val) for functions that increment or decrement an index in an array of values
+  enum class EditMode
+  {
+    Absolute,
+    Delta
+  };
+
   template <typename T>
   class SockPuppet : public FieldBase
   {
@@ -77,11 +86,15 @@ namespace esp32_ui
     latchable<T> state;
 
   public:
+    EditMode mode;
+
     const char *delimiter;
 
     SockPuppet(const char *label,
+               EditMode mode = EditMode::Absolute,
                const char *delimiter = ": ")
-        : FieldBase(label)
+        : FieldBase(label),
+          mode(mode)
     {
       this->wrappable = false;
     }
@@ -91,7 +104,7 @@ namespace esp32_ui
     virtual void apply_delta(int8_t delta) override
     {
       menuprintf("%s: SockPuppet apply_delta %d\n", this->label, delta);
-      state.in += delta;
+      state.in += (T)delta;
     }
 
     virtual T value() const
@@ -106,7 +119,6 @@ namespace esp32_ui
 
     virtual void handle_sync() override
     {
-      menuprintf("ch %d ", ui_state->SELECTED_CHANNEL);
       if (this->getter_cb)
       {
         T val = this->getter_cb();
@@ -137,17 +149,34 @@ namespace esp32_ui
     virtual void commit() override
     {
       menuprintf("%s: commit\n", this->label);
+      T delta = state.in - state.out;
       state.clock();
       if (this->setter_cb)
       {
-        menuprintf("%s: SockPuppet setter_cb\n", this->label);
-        this->setter_cb(state.out);
+        if (mode == EditMode::Delta)
+        {
+          // setter_cb moves the index in array of possible values
+          menuprintf("%s: SockPuppet setter_cb (delta=%d)\n", this->label, delta);
+          this->setter_cb(delta);
+        }
+        else
+        {
+          // setter_cb sets the value directly
+          menuprintf("%s: SockPuppet setter_cb\n", this->label);
+          this->setter_cb(state.out);
+        }
       }
     }
 
-    // Revert local state to original
     virtual void cancel() override
     {
+      // I haven't fully decided whether to permit cancels. It probably
+      // doesn't make sense if SockPuppet is really just a control surface
+      // for external values, but I'm leaving the original logic here in case
+      // I realize there's a use case for it and I don't remember how it was done
+      //
+      assert(false && "SockPuppet does not support cancel()");
+
       state.loopback();
       menuprintf("%s: cancel\n", this->label);
     }
