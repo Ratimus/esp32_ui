@@ -50,12 +50,16 @@ namespace esp32_ui
     mutable std::recursive_mutex stack_mutex;
     bool sync_pending = false;
 
+    // Limit access; call UIManager::dispatch_event(MenuEvent ev) to place
+    // events on queue
+    void dispatch(const MenuEvent &ev);
+    friend void evt_dispatch_task(void * param);
+
   public:
     // Meyers singleton
     static EventRouter *instance();
 
     void request_sync();
-    void dispatch(const MenuEvent &ev);
 
     bool bind_popup(MenuEvent::Source src, uint8_t idx, Element *el);
     bool unbind_popup(MenuEvent::Source src, uint8_t idx);

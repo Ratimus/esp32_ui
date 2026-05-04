@@ -71,8 +71,7 @@ namespace esp32_ui
   // Tell all the active elements that they need to sync their data
   void EventRouter::request_sync()
   {
-    std::lock_guard<std::recursive_mutex> lock(stack_mutex);
-    sync_pending = true;
+    sync_pending |= true;
   }
 
   // Temporarily route all MenuEvents of a given source and index to a given element
@@ -220,7 +219,7 @@ namespace esp32_ui
     top_menu()->handle_exit();
 
     menu_stack.pop();
-    assert(top_menu());
+    assert(top_menu() && "You popped your root");
     top_menu()->handle_enter();
 
     return true;

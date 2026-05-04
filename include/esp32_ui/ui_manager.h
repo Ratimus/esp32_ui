@@ -1,12 +1,8 @@
 #pragma once
 
 #include <memory.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
+#include <freertos/FreeRTOS.h>
 #include <esp32_ui/canvas.h>
-
-extern TaskHandle_t ui_task_handle;
 
 // This class takes nav and sw inputs and navigates through menu stuff
 
