@@ -1,4 +1,5 @@
 # ESP32 UI Library
+Author: Ryan "Ratimus" Richardson
 
 A lightweight, modular UI framework for ESP32 projects using the U8g2 OLED display library. Designed for creating menu-driven interfaces with buttons and rotary encoders, optimized for small OLED displays (e.g., 128x32).
 
