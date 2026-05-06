@@ -39,32 +39,10 @@ namespace esp32_ui
     virtual void commit() = 0; // Confirm edit
     virtual void cancel() = 0; // Revert edit
 
-    virtual void handle_draw(Display *d) const override
-    {
-      print_label(d);
-      print_delimiter(d);
-      print_value(d);
-    }
-
+    virtual void handle_draw(Display *d) const override;
     virtual void print_delimiter(Display *d) const { d->print(delimiter); }
     virtual void print_value(Display *d) const override = 0;
-    virtual bool handle_nav_delta(const MenuEvent &ev)
-    {
-      menuprintf("%s: FieldBase handle_nav_delta\n", label);
-      if ((ev.type == MenuEvent::Type::NavLeft) || (ev.type == MenuEvent::Type::NavUp))
-      {
-        apply_delta(-1);
-        return true;
-      }
-
-      if ((ev.type == MenuEvent::Type::NavRight) || (ev.type == MenuEvent::Type::NavDown))
-      {
-        apply_delta(+1);
-        return true;
-      }
-
-      return false;
-    }
+    virtual bool handle_nav_delta(const MenuEvent &ev);
     virtual void apply_delta(int8_t delta) = 0;
   };
 
@@ -172,26 +150,15 @@ namespace esp32_ui
       {
         return;
       }
-      EventRouter::instance()->request_sync();
+      FieldBase::apply_delta(0);
     }
 
-    virtual T value() const
-    {
-      return temp_val;
-    }
-
-    virtual void print_value(Display *d) const override
-    {
-      d->print(temp_val);
-    }
+    virtual T value() const { return temp_val; }
+    virtual void print_value(Display *d) const override { d->print(temp_val); }
+    void set_big_step(T val) { big_step = val; }
 
     std::function<T()> getter_cb;
     std::function<void(T)> setter_cb;
-
-    void set_big_step(T val)
-    {
-      big_step = val;
-    }
 
     virtual void handle_sync() override
     {

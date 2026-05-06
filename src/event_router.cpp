@@ -68,16 +68,9 @@ namespace esp32_ui
     return &inst;
   }
 
-  // Tell all the active elements that they need to sync their data
-  void EventRouter::request_sync()
-  {
-    sync_pending |= true;
-  }
-
   // Temporarily route all MenuEvents of a given source and index to a given element
   bool EventRouter::bind_popup(MenuEvent::Source src, uint8_t idx, Element *el)
   {
-    std::lock_guard<std::recursive_mutex> lock(stack_mutex);
     bindings[1][{src, idx}] = el;
     return true;
   }
@@ -85,7 +78,6 @@ namespace esp32_ui
   // Remove temporary routing of MenuEvents for a given source and index
   bool EventRouter::unbind_popup(MenuEvent::Source src, uint8_t idx)
   {
-    std::lock_guard<std::recursive_mutex> lock(stack_mutex);
     bindings[1].erase({src, idx});
     return true;
   }
@@ -93,7 +85,6 @@ namespace esp32_ui
   // Sets up filter in dispatcher to divert events to a specific target
   bool EventRouter::bind(MenuEvent::Source src, uint8_t idx, Element *el)
   {
-    std::lock_guard<std::recursive_mutex> lock(stack_mutex);
     el->register_event_listener(MenuEvent{src, MenuEvent::Type::AnyAndAll, idx});
     bindings[0][{src, idx}] = el;
     return true;
@@ -102,7 +93,6 @@ namespace esp32_ui
   // Stops filtering out specific events pre-dispatch
   bool EventRouter::unbind(MenuEvent::Source source, uint8_t idx)
   {
-    std::lock_guard<std::recursive_mutex> lock(stack_mutex);
     Element *el = static_cast<Element *>(bindings[0][{source, idx}]);
     el->unregister_event_listener(MenuEvent{source, MenuEvent::Type::AnyAndAll, idx});
     bindings[0].erase({source, idx});
@@ -114,9 +104,9 @@ namespace esp32_ui
   // something bad happens.
   void EventRouter::dispatch(const MenuEvent &ev)
   {
+
     Element *top = nullptr;
     {
-      std::lock_guard<std::recursive_mutex> lock(stack_mutex);
       top = menu_stack.top();
     }
 
@@ -127,22 +117,13 @@ namespace esp32_ui
 
     if (ev.type == MenuEvent::Type::Sync)
     {
-      sync_pending = true;
-    }
-
-    if (sync_pending)
-    {
       top->handle_event(MenuEvent{MenuEvent::Source::System, MenuEvent::Type::Sync, 0});
-      sync_pending = false;
+      return;
     }
 
     if (ev.type == MenuEvent::Type::Draw)
     {
-      auto *d = Display::instance();
-      d->clearBuffer();
-      top->handle_draw(d);
-      d->sendBuffer();
-      return;
+
     }
 
     if (handle_temporary_interceptors(ev))
@@ -204,7 +185,6 @@ namespace esp32_ui
   //
   bool EventRouter::pop_menu()
   {
-    std::lock_guard<std::recursive_mutex> lock(stack_mutex);
     if (menu_stack.empty())
     {
       return false;
@@ -227,13 +207,11 @@ namespace esp32_ui
 
   Element *EventRouter::top_menu() const
   {
-    std::lock_guard<std::recursive_mutex> lock(stack_mutex);
     return menu_stack.top();
   }
 
   Element *EventRouter::root_menu() const
   {
-    std::lock_guard<std::recursive_mutex> lock(stack_mutex);
     return menu_stack.root();
   }
 
@@ -245,7 +223,7 @@ namespace esp32_ui
   // backward.
   Element *EventRouter::overwrite_top(Element *el)
   {
-    std::lock_guard<std::recursive_mutex> lock(stack_mutex);
+    std::lock_guard<std::mutex> lock(stack_mutex);
     Element *popped = nullptr;
     if (top_menu())
     {

@@ -40,12 +40,13 @@ namespace esp32_ui
     virtual void apply_delta(int8_t delta) override
     {
       menuprintf("%s: SockPuppet apply_delta %d\n", this->label, delta);
-      state.in += (T)delta;
+      auto tmp = state.in() + (T)delta;
+      state.set_input(tmp);
     }
 
     virtual T value() const
     {
-      return state.in;
+      return state.in();
     }
 
     virtual void print_value(Display *d) const override
@@ -58,7 +59,7 @@ namespace esp32_ui
       if (this->getter_cb)
       {
         T val = this->getter_cb();
-        if (val != state.out) // Only update if changed, avoiding unnecessary redraws/focus loss
+        if (val != state.out()) // Only update if changed, avoiding unnecessary redraws/focus loss
         {
           menuprintf("sync %s: %d --> %d\n", this->label, state.out, val);
           state.clock_in(val);
@@ -78,14 +79,14 @@ namespace esp32_ui
     {
       assert(cb);
       setter_cb = std::move(cb);
-      setter_cb(state.out);
+      setter_cb(state.out());
     }
 
     // Apply the edit to the model
     virtual void commit() override
     {
       menuprintf("%s: commit\n", this->label);
-      T delta = state.in - state.out;
+      T delta = state.in() - state.out();
       state.clock();
       if (this->setter_cb)
       {
@@ -99,7 +100,7 @@ namespace esp32_ui
         {
           // setter_cb sets the value directly
           menuprintf("%s: SockPuppet setter_cb\n", this->label);
-          this->setter_cb(state.out);
+          this->setter_cb(state.out());
         }
       }
     }

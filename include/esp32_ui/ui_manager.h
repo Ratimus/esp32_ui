@@ -11,9 +11,11 @@ namespace esp32_ui
   class UIManager
   {
   protected:
+
     static void ui_task(void *param);
+    static void display_task(void * param);
+
     virtual void screen_saver() {}
-    void dispatch_event(MenuEvent ev);
 
     UIState *ui_state = nullptr;
     std::unique_ptr<Canvas> root_node;
@@ -21,8 +23,10 @@ namespace esp32_ui
   public:
     Canvas *root_node_ptr = nullptr;
 
-    virtual void update() = 0;
-    virtual void draw();
+    virtual bool update() = 0;
+    static void schedule_redraw();
+
+
 
     // Put custom setup stuff here to be called once at the start of the ui_task
     // on an instance of your derived class
@@ -30,6 +34,10 @@ namespace esp32_ui
     void start_ui();
 
     UIManager(std::unique_ptr<Canvas> root);
+    static void dispatch_event(MenuEvent ev);
+    static void request_sync();
+    static void request_redraw();
+
     virtual ~UIManager() = default;
   };
 

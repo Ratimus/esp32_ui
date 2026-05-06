@@ -2,7 +2,7 @@
 #include <freertos/task.h>
 
 #include <esp32_ui/field.h>
-#include <esp32_ui/heartbeat.h>
+#include <esp32_utils/heartbeat.h>
 #include <esp32_ui/widget.h>
 #include <esp32_ui/ui_manager.h>
 #include <esp32_ui/event_router.h>
@@ -10,11 +10,16 @@
 
 namespace esp32_ui
 {
+  static bool dirty_screen;
+
   TaskHandle_t ui_task_handle = nullptr;
   UIState *MenuBase::ui_state = nullptr;
 
   TaskHandle_t evt_dispatch_task_handle = nullptr;
   QueueHandle_t evt_queue = nullptr;
+
+  bool sync_pending = false;
+  bool redraw_pending = false;
 
   UIManager::UIManager(std::unique_ptr<Canvas> root)
   {
@@ -23,6 +28,18 @@ namespace esp32_ui
     root_node = std::move(root);
     root_node_ptr = root_node.get();
     EventRouter::instance()->push_menu(root_node_ptr);
+    sync_pending = true;
+  }
+
+  void UIManager::request_sync()
+  {
+    // Tell all the active elements that they need to sync their data
+    sync_pending |= true;
+  }
+
+  void UIManager::request_redraw()
+  {
+    redraw_pending |= true;
   }
 
   void UIManager::dispatch_event(MenuEvent ev)
@@ -51,6 +68,7 @@ namespace esp32_ui
     }
 
     MenuEvent ev;
+    auto router = EventRouter::instance();
 
     //dbprintln("evt_dispatch_task started");
     Serial.println("evt dispatch started");
@@ -58,22 +76,80 @@ namespace esp32_ui
     while(true)
     {
       if (pdTRUE ==
-        xQueueReceive(evt_queue, (void *)&ev, portMAX_DELAY))
+        xQueueReceive(evt_queue, (void *)&ev, 1))
       {
         hb_start(hb);
-        EventRouter::instance()->dispatch(ev);
+        hb_label(hb, "queued evt");
+        router->dispatch(ev);
         hb_end(hb);
+      }
+      else if (sync_pending)
+      {
+        hb_start(hb);
+        hb_label(hb, "sync");
+        router->dispatch({MenuEvent::Source::System, MenuEvent::Type::Sync, 0});
+        hb_end(hb);
+        sync_pending = false;
       }
       else
       {
         taskYIELD();
       }
+
     }
   }
 
-  void UIManager::draw()
+  void UIManager::schedule_redraw()
   {
-    dispatch_event(MenuEvent{MenuEvent::Source::System, MenuEvent::Type::Draw, 0});
+    dirty_screen = true;
+    // dispatch_event(MenuEvent{MenuEvent::Source::System, MenuEvent::Type::Draw, 0});
+  }
+
+  void UIManager::display_task(void * param)
+  {
+    UIManager *ui = static_cast<UIManager *>(param);
+
+    TaskHeartbeat * hb = register_task("display task");
+    assert(hb && "whoops, max tasks registered");
+
+    const TickType_t xTaskFrequency = pdMS_TO_TICKS(33);
+    TickType_t xLastWakeTime{xTaskGetTickCount()};
+
+    schedule_redraw();
+
+    auto *d = Display::instance();
+    if (d)
+    {
+      d->start_display();
+    }
+
+    vTaskDelay(100);
+
+    while(1)
+    {
+      hb_start(hb);
+      if (!ui->root_node->is_schleep())
+      {
+        schedule_redraw();
+      }
+      else
+      {
+        ui->screen_saver();
+        schedule_redraw();
+      }
+
+      if (dirty_screen)
+      {
+        d->clearBuffer();
+        EventRouter::instance()->top_menu()->handle_draw(d);
+        d->sendBuffer();
+
+        dirty_screen = false;
+      }
+      hb_end(hb);
+
+      xTaskDelayUntil(&xLastWakeTime, xTaskFrequency);
+    }
   }
 
   void UIManager::ui_task(void *param)
@@ -81,17 +157,11 @@ namespace esp32_ui
     TaskHeartbeat * hb = register_task("ui task");
     assert(hb && "whoops, max tasks registered");
 
-    auto *ptr = Display::instance();
-    if (ptr)
-    {
-      ptr->start_display();
-    }
-
     UIManager *ui = static_cast<UIManager *>(param);
     ui->ui_task_begin_hook();
     EventRouter::instance()->push_menu(ui->root_node_ptr);
 
-    const TickType_t xTaskFrequency{100};
+    const TickType_t xTaskFrequency = pdMS_TO_TICKS(10);
     TickType_t xLastWakeTime{xTaskGetTickCount()};
     uint8_t display_refresh_rate{10};
     uint8_t display_refresh_timer{0};
@@ -115,28 +185,10 @@ namespace esp32_ui
       // pcTaskGetName(xHandle);
 
       hb_start(hb);
+      dirty_screen |= ui->update();
 
       // if (!display_refresh_timer)
       // {
-        if (!ui->root_node->is_schleep())
-        {
-          ui->draw();
-        }
-        else
-        {
-          ui->screen_saver();
-        }
-      // }
-      // else
-      // {
-        ui->update();
-      // }
-
-      // ++display_refresh_timer;
-      // if (display_refresh_timer == display_refresh_rate)
-      // {
-      //   display_refresh_timer = 0;
-      // }
 
       hb_end(hb);
       xTaskDelayUntil(&xLastWakeTime, xTaskFrequency);
@@ -145,6 +197,7 @@ namespace esp32_ui
 
   void UIManager::start_ui()
   {
+    dirty_screen = true;
     start_heartbeat();
     vTaskDelay(1000);
 
@@ -153,7 +206,7 @@ namespace esp32_ui
         "ui task",
         1024 * 4,
         this,
-        10,
+        18,
         &ui_task_handle);
     vTaskDelay(1000);
 
@@ -162,9 +215,17 @@ namespace esp32_ui
       "evt dispatch",
       1024 * 5,
       (void *)nullptr,
-      15,
+      10,
       &evt_dispatch_task_handle);
     vTaskDelay(1000);
+
+    xTaskCreate(
+      &display_task,
+      "display_task",
+      1024 * 5,
+      this,
+      1,
+      &evt_dispatch_task_handle);
   }
 
 } // namespace esp32_ui

@@ -47,7 +47,7 @@ namespace esp32_ui
   class EventRouter
   {
     MenuStack menu_stack;
-    mutable std::recursive_mutex stack_mutex;
+    mutable std::mutex stack_mutex;
     bool sync_pending = false;
 
     // Limit access; call UIManager::dispatch_event(MenuEvent ev) to place
@@ -58,8 +58,6 @@ namespace esp32_ui
   public:
     // Meyers singleton
     static EventRouter *instance();
-
-    void request_sync();
 
     bool bind_popup(MenuEvent::Source src, uint8_t idx, Element *el);
     bool unbind_popup(MenuEvent::Source src, uint8_t idx);

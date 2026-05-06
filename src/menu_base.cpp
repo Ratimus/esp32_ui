@@ -39,6 +39,14 @@ namespace esp32_ui
     case MenuEvent::Type::Select:
       return handle_nav_select(ev);
 
+    case MenuEvent::Type::FreezeData:
+      handle_exit();
+      break;
+
+    case MenuEvent::Type::UnfreezeData:
+      handle_enter();
+      break;
+
     default:
       break;
     }
